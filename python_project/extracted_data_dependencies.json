@@ -1,0 +1,92 @@
+[
+  {
+    "worksheet": {
+      "worksheet_name": "Hoja 2",
+      "worksheet_title": "",
+      "type": "Pie",
+      "worksheet_datasources": [
+        {
+          "caption": "Hoja1 (TableauPrueba)",
+          "name": "federated.032l5nx1h1c6eu17o138s0xwn4rh",
+          "relation_name": null
+        }
+      ],
+      "dependency_info": [
+        {
+          "datasource": "federated.032l5nx1h1c6eu17o138s0xwn4rh",
+          "columns": [
+            {
+              "caption": "",
+              "name": "[Fecha]",
+              "role": "dimension",
+              "calculation_formula": ""
+            },
+            {
+              "caption": "Venta",
+              "name": "[venta]",
+              "role": "measure",
+              "calculation_formula": ""
+            }
+          ],
+          "column_instances": [
+            {
+              "column": "[Fecha]",
+              "derivation": "Day"
+            },
+            {
+              "column": "[venta]",
+              "derivation": "Sum"
+            }
+          ]
+        }
+      ],
+      "cols": "",
+      "rows": ""
+    }
+  },
+  {
+    "worksheet": {
+      "worksheet_name": "Suma de venta por país",
+      "worksheet_title": "",
+      "type": "Automatic",
+      "worksheet_datasources": [
+        {
+          "caption": "Hoja1 (TableauPrueba)",
+          "name": "federated.032l5nx1h1c6eu17o138s0xwn4rh",
+          "relation_name": null
+        }
+      ],
+      "dependency_info": [
+        {
+          "datasource": "federated.032l5nx1h1c6eu17o138s0xwn4rh",
+          "columns": [
+            {
+              "caption": "",
+              "name": "[País]",
+              "role": "dimension",
+              "calculation_formula": ""
+            },
+            {
+              "caption": "Venta",
+              "name": "[venta]",
+              "role": "measure",
+              "calculation_formula": ""
+            }
+          ],
+          "column_instances": [
+            {
+              "column": "[País]",
+              "derivation": "None"
+            },
+            {
+              "column": "[venta]",
+              "derivation": "Sum"
+            }
+          ]
+        }
+      ],
+      "cols": "venta",
+      "rows": "País"
+    }
+  }
+]

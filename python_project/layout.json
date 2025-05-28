@@ -1,0 +1,58 @@
+{
+  "sections": [
+    {
+      "name": "Page 1",
+      "displayName": "Página 1",
+      "visualContainers": [
+        {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "width": 400,
+          "height": 300,
+          "config": {
+            "singleVisual": {
+              "visualType": "pieChart",
+              "projections": {
+                "Category": [
+                  "Tabla1[País]"
+                ],
+                "Y": [
+                  "SUM(Tabla1[venta])"
+                ]
+              },
+              "title": {
+                "visible": true,
+                "text": "Hoja 2"
+              }
+            }
+          }
+        },
+        {
+          "x": 420,
+          "y": 0,
+          "z": 1,
+          "width": 400,
+          "height": 300,
+          "config": {
+            "singleVisual": {
+              "visualType": "barChart",
+              "projections": {
+                "Category": [
+                  "Tabla1[País]"
+                ],
+                "Y": [
+                  "SUM(Tabla1[venta])"
+                ]
+              },
+              "title": {
+                "visible": true,
+                "text": "Suma de venta por país"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
