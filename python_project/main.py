@@ -13,26 +13,28 @@ Script principal para convertir dashboards de Tableau a la estructura de Power B
 Extrae dashboards y worksheets, genera la estructura de carpetas y archivos JSON.
 """
 
-# Define la ruta base del proyecto
+# Ruta base del proyecto Tableau (donde está el .twb)
 BASE_PATH = r"C:\Users\alejo\OneDrive\Desktop\tableau_to_powerbi\python_project"
+# Ruta base del proyecto Power BI (donde quieres los archivos generados) hasta la carpeta definition
+POWERBI_PROJECT_PATH = r"C:\Users\alejo\OneDrive\Desktop\prueba\prueba.Report\definition"
+
 
 if __name__ == "__main__":
     try:
         # Ruta al archivo Tableau
         twb_path = os.path.join(BASE_PATH, "TableauPrueba.twb")
         
-         # Validación de existencia del archivo
+        # Validación de existencia del archivo
         if not os.path.exists(twb_path):
             raise FileNotFoundError(f"No se encontró el archivo Tableau en: {twb_path}")
         
         # Extraer dashboards y worksheets
         dashboards = extract_dashboards_and_worksheets(twb_path)
         extracted_data = extract_datasource_and_dependencies(twb_path)
-        print(type(extracted_data))
         dashboard_hex_list = []
 
         # Procesar cada dashboard y generar carpetas y archivos de página y visuals
-        pages_folder = os.path.join(BASE_PATH, "pages")
+        pages_folder = os.path.join(POWERBI_PROJECT_PATH, "pages")  # <-- Cambiado
         os.makedirs(pages_folder, exist_ok=True)
 
         for dashboard in dashboards:
@@ -82,7 +84,7 @@ if __name__ == "__main__":
             "pageOrder": dashboard_hex_list,
             "activePageName": dashboard_hex_list[0] if dashboard_hex_list else ""
         }
-        pages_json_path = os.path.join(pages_folder, "pages.json")
+        pages_json_path = os.path.join(pages_folder, "pages.json")  # <-- Cambiado
         with open(pages_json_path, "w", encoding="utf-8") as f:
             json.dump(pages_json, f, ensure_ascii=False, indent=2)
 
@@ -132,7 +134,7 @@ if __name__ == "__main__":
                 "useDefaultAggregateDisplayName": True
             }
         }
-        report_json_path = os.path.join(BASE_PATH, "report.json")
+        report_json_path = os.path.join(POWERBI_PROJECT_PATH, "report.json") 
         with open(report_json_path, "w", encoding="utf-8") as f:
             json.dump(report_json, f, ensure_ascii=False, indent=2)
     
