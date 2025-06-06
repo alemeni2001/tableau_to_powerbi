@@ -1,26 +1,54 @@
 from utils import generar_hex_metodo
+def is_dimension(field, worksheet):
+    """
+    Devuelve True si el campo es una dimensión según el atributo 'role' en dependency_info.
+    """
+    # Normaliza el nombre quitando corchetes
+    def normalize(f):
+        return f.replace('[', '').replace(']', '').lower()
+    field_norm = normalize(field)
+    for dep in worksheet.get("dependency_info", []):
+        for col in dep.get("columns", []):
+            name_norm = normalize(col.get("name", ""))
+            caption_norm = normalize(col.get("caption", ""))
+            if field_norm == name_norm or (caption_norm and field_norm == caption_norm):
+                return col.get("role", "").lower() == "dimension"
+    return False
 
-def get_visual_generator_by_type(worksheet_type):
+def get_visual_generator_by_type(worksheet_type, worksheet):
     """
     Devuelve la función generadora de visual correspondiente según el tipo de gráfico de Tableau.
+    Para 'bar', diferencia entre horizontal (bar) y vertical (column) según la ubicación de la dimensión.
     """
+    if worksheet_type.lower() == "bar":
+        # Si la dimensión está en Rows, es horizontal (bar)
+        if worksheet.get("rows") and is_dimension(worksheet["rows"][0], worksheet):
+            print("Bar horizontal detected")
+            return generate_json_bar_graph
+        # Si la dimensión está en Columns, es vertical (column)
+        elif worksheet.get("cols") and is_dimension(worksheet["cols"][0], worksheet):
+            print("Bar vertical detected")
+            return generate_json_column_graph
+        else:
+            print("Bar type not recognized, defaulting to bar graph")
+            return generate_json_bar_graph 
+    # Otros tipos igual que antes
     visual_type_map = {
-        "bar": generate_json_bar_graph,
-        "column": generate_json_column_graph,
         "line": generate_json_line_graph,
         "pie": generate_json_pie,
         "table": generate_json_table,
     }
-    # Por defecto, si no se reconoce el tipo, usa tabla
     return visual_type_map.get(worksheet_type.lower(), generate_json_table)
 
-
 #Función para gráfico de columnas
-def generate_json_column_graph(extracted_data, name):
-    """
-    Genera la estructura JSON para un visual de Power BI tipo columna (clusteredColumnChart).
-    Devuelve el diccionario listo para ser guardado como visual.json.
-    """
+def generate_json_column_graph(
+    extracted_data, name,
+    position_X=50, position_Y=50, position_width=500, position_height=350, position_Z=2
+):
+    if (position_X, position_Y, position_width, position_height, position_Z) == (50, 50, 500, 350, 2):
+        print("[DEFAULT]")
+    else:
+        print("[CUSTOM]")
     worksheet_data = extracted_data[0]
     worksheet = worksheet_data["worksheet"]
     worksheet_title = worksheet["worksheet_title"]
@@ -34,11 +62,6 @@ def generate_json_column_graph(extracted_data, name):
     direction = "Ascending"
     isDefaultSort_true = True
     drillFilterOtherVisuals = True
-    position_X = 100
-    position_Y = 100
-    position_Z = 2
-    position_height = 300
-    position_width = 300
 
     data = {
         "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
@@ -137,11 +160,15 @@ def generate_json_column_graph(extracted_data, name):
     return data
 
 #Función para gráfico de barras
-def generate_json_bar_graph(extracted_data, name):
-    """
-    Genera la estructura JSON para un visual de Power BI tipo barra (barChart).
-    Devuelve el diccionario listo para ser guardado como visual.json.
-    """
+def generate_json_bar_graph(
+    extracted_data, name,
+    position_X=50, position_Y=50, position_width=500, position_height=350, position_Z=2
+):
+    if (position_X, position_Y, position_width, position_height, position_Z) == (50, 50, 500, 350, 2):
+        print("[DEFAULT]")
+    else:
+        print("[CUSTOM]")
+        print(f"Custom position: X={position_X}, Y={position_Y}, Width={position_width}, Height={position_height}, Z={position_Z}")
     worksheet_data = extracted_data[0]
     worksheet = worksheet_data["worksheet"]
     worksheet_title = worksheet["worksheet_title"]
@@ -155,11 +182,6 @@ def generate_json_bar_graph(extracted_data, name):
     direction = "Ascending"
     isDefaultSort_true = True
     drillFilterOtherVisuals = True
-    position_X = 100
-    position_Y = 100
-    position_Z = 2
-    position_height = 300
-    position_width = 300
 
     data = {
         "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
@@ -258,10 +280,14 @@ def generate_json_bar_graph(extracted_data, name):
     return data
 
 #Función para gráfico de torta
-def generate_json_pie(extracted_data, name):
-    """
-    Genera la estructura JSON para un visual de Power BI tipo torta (pieChart) con categoría y valor.
-    """
+def generate_json_pie(
+    extracted_data, name,
+    position_X=50, position_Y=50, position_width=400, position_height=400, position_Z=2
+):
+    if (position_X, position_Y, position_width, position_height, position_Z) == (50, 50, 400, 400, 2):
+        print("[DEFAULT]")
+    else:
+        print("[CUSTOM]")
     worksheet_data = extracted_data[0]
     worksheet = worksheet_data["worksheet"]
     worksheet_title = worksheet["worksheet_title"]
@@ -272,11 +298,6 @@ def generate_json_pie(extracted_data, name):
         "Sum": 0, "Promedio": 1, "Recuento(distintivo)": 2, "Minimo": 3, "Maximo": 4,
         "Recuento": 5, "Mediana": 6, "DesviacionEstándar": 7, "Varianza": 8, "None": 0
     }.get(worksheet["dependency_info"][0]["column_instances"][0].get("derivation", ""), 0)
-    position_X = 9.4488915545918015
-    position_Y = 0
-    position_Z = 0
-    position_height = 685.98952686336486
-    position_width = 1184.891000945812
 
     data = {
         "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
@@ -418,24 +439,19 @@ def generate_json_pie(extracted_data, name):
     return data
 
 #Función para gráfico de tablas
-def generate_json_table(extracted_data, name):
-    """
-    Genera la estructura JSON para un visual de Power BI tipo tabla (tableEx) con todas las columnas del worksheet,
-    respetando el orden y la estructura del ejemplo dado.
-    """
+def generate_json_table(
+    extracted_data, name,
+    position_X=50, position_Y=50, position_width=600, position_height=300, position_Z=2, tabOrder=2
+):
+    if (position_X, position_Y, position_width, position_height, position_Z) == (50, 50, 600, 300, 2):
+        print("[DEFAULT]")
+    else:
+        print("[CUSTOM]")
     worksheet_data = extracted_data[0]
     worksheet = worksheet_data["worksheet"]
     worksheet_title = worksheet["worksheet_title"]
     worksheet_relation = worksheet["worksheet_datasources"][0].get('caption', '')
     worksheet_cols = worksheet.get("cols") or [col["name"].strip("[]") for col in worksheet.get("dependency_info", [{}])[0].get("columns", [])] or ["ColumnaDefault"]
-
-    # Posiciones y dimensiones según tu ejemplo
-    position_X = 532.91748367897765
-    position_Y = 120.94581189877506
-    position_Z = 4
-    position_height = 177.63916122632588
-    position_width = 487.56280421693697
-    tabOrder = 2
 
     # Proyecciones y filtros dinámicos para cada columna
     projections = []
@@ -514,10 +530,14 @@ def generate_json_table(extracted_data, name):
     return data
 
 #Función para gráfico de línea
-def generate_json_line_graph(extracted_data, name):
-    """
-    Genera la estructura JSON para un visual de Power BI tipo línea (lineChart) con solo la columna de fecha en el eje X y filtros simples.
-    """
+def generate_json_line_graph(
+    extracted_data, name,
+    position_X=50, position_Y=50, position_width=600, position_height=350, position_Z=2
+):
+    if (position_X, position_Y, position_width, position_height, position_Z) == (50, 50, 600, 350, 2):
+        print("[DEFAULT]")
+    else:
+        print("[CUSTOM]")
     worksheet_data = extracted_data[0]
     worksheet = worksheet_data["worksheet"]
     worksheet_title = worksheet["worksheet_title"]
@@ -528,11 +548,6 @@ def generate_json_line_graph(extracted_data, name):
         "Sum": 0, "Promedio": 1, "Recuento(distintivo)": 2, "Minimo": 3, "Maximo": 4,
         "Recuento": 5, "Mediana": 6, "DesviacionEstándar": 7, "Varianza": 8, "None": 0
     }.get(worksheet["dependency_info"][0]["column_instances"][0].get("derivation", ""), 0)
-    position_X = 9.4488915545918015
-    position_Y = 0
-    position_Z = 0
-    position_height = 680.32019193060978
-    position_width = 1160.3238829038733
 
     data = {
         "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",

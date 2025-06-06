@@ -14,3 +14,13 @@ def normalize_name(name):
     Si el nombre es None, devuelve una cadena vacía.
     """
     return name.strip().lower() if name else ""
+
+def scale_zone(zone, max_width, max_height, target_width=1280, target_height=720):
+    scale_x = target_width / max_width if max_width else 1
+    scale_y = target_height / max_height if max_height else 1
+    return {
+        "x": int(zone["x"] * scale_x),
+        "y": int(zone["y"] * scale_y),
+        "width": int(zone["width"] * scale_x),
+        "height": int(zone["height"] * scale_y)
+    }

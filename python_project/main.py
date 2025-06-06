@@ -6,7 +6,7 @@ from generators import (
     generate_json_column_graph, generate_json_bar_graph, generate_json_line_graph,
     generate_json_pie, generate_json_table, get_visual_generator_by_type
 )
-from utils import generar_hex_metodo, normalize_name
+from utils import generar_hex_metodo, normalize_name, scale_zone
 
 """
 Script principal para convertir dashboards de Tableau a la estructura de Power BI.
@@ -18,11 +18,10 @@ BASE_PATH = r"C:\Users\alejo\OneDrive\Desktop\tableau_to_powerbi\python_project"
 # Ruta base del proyecto Power BI (donde quieres los archivos generados) hasta la carpeta definition
 POWERBI_PROJECT_PATH = r"C:\Users\alejo\OneDrive\Desktop\prueba\prueba.Report\definition"
 
-
 if __name__ == "__main__":
     try:
         # Ruta al archivo Tableau
-        twb_path = os.path.join(BASE_PATH, "TableauPrueba.twb")
+        twb_path = os.path.join(BASE_PATH, "TableauPrueba 3.twb")
         
         # Validación de existencia del archivo
         if not os.path.exists(twb_path):
@@ -33,8 +32,13 @@ if __name__ == "__main__":
         extracted_data = extract_datasource_and_dependencies(twb_path)
         dashboard_hex_list = []
 
+        # --- Cálculo de máximos para escalado ---
+        all_zones = [zone for dashboard in dashboards for zone in dashboard["worksheet_zones"]]
+        max_width = max((z["x"] + z["width"]) for z in all_zones) if all_zones else 1280
+        max_height = max((z["y"] + z["height"]) for z in all_zones) if all_zones else 720
+
         # Procesar cada dashboard y generar carpetas y archivos de página y visuals
-        pages_folder = os.path.join(POWERBI_PROJECT_PATH, "pages")  # <-- Cambiado
+        pages_folder = os.path.join(POWERBI_PROJECT_PATH, "pages")  
         os.makedirs(pages_folder, exist_ok=True)
 
         for dashboard in dashboards:
@@ -72,8 +76,24 @@ if __name__ == "__main__":
                     if not os.path.exists(visual_json_path):
                         os.makedirs(visual_subfolder, exist_ok=True)
                         worksheet_type = worksheet_data["worksheet"]["type"]
-                        generate_func = get_visual_generator_by_type(worksheet_type)
-                        data = generate_func([worksheet_data], worksheet_hex)    
+                        print(f"Generando visual para: {worksheet_name} ({worksheet_type})")
+                        generate_func = get_visual_generator_by_type(worksheet_type, worksheet_data["worksheet"])
+                        zone = next(
+                            (z for z in dashboard["worksheet_zones"] if z["worksheet_name"] == worksheet_name),
+                            None
+                        )
+                        if zone:
+                            scaled = scale_zone(zone, max_width, max_height)
+                            data = generate_func(
+                                [worksheet_data], worksheet_hex,
+                                position_X=scaled["x"],
+                                position_Y=scaled["y"],
+                                position_width=scaled["width"],
+                                position_height=scaled["height"],
+                                position_Z=2
+                            )
+                        else:
+                            data = generate_func([worksheet_data], worksheet_hex)
                         with open(visual_json_path, "w", encoding="utf-8") as f:
                             json.dump(data, f, ensure_ascii=False, indent=2)
                     visuals_creados.add(normalized_name)
@@ -84,7 +104,7 @@ if __name__ == "__main__":
             "pageOrder": dashboard_hex_list,
             "activePageName": dashboard_hex_list[0] if dashboard_hex_list else ""
         }
-        pages_json_path = os.path.join(pages_folder, "pages.json")  # <-- Cambiado
+        pages_json_path = os.path.join(pages_folder, "pages.json") 
         with open(pages_json_path, "w", encoding="utf-8") as f:
             json.dump(pages_json, f, ensure_ascii=False, indent=2)
 

@@ -92,7 +92,7 @@ def extract_datasource_and_dependencies(twb_file_path: str) -> List[Dict[str, An
 def extract_dashboards_and_worksheets(twb_file_path: str) -> List[Dict[str, Any]]:
     """
     Extrae los dashboards y los worksheets asociados desde un archivo Tableau (.twb).
-    Devuelve una lista de diccionarios con el nombre del dashboard y los worksheets asociados.
+    Devuelve una lista de diccionarios con el nombre del dashboard, los worksheets asociados y sus posiciones/tamaños.
     """
     try:
         tree = ET.parse(twb_file_path)
@@ -104,13 +104,23 @@ def extract_dashboards_and_worksheets(twb_file_path: str) -> List[Dict[str, Any]
     for dashboard in root.findall(".//dashboard"):
         dashboard_name = dashboard.get("name", "")
         worksheet_names = []
+        worksheet_zones = []
         for zone in dashboard.findall(".//zone"):
             ws_name = zone.get("name")
-            if ws_name:
+            if ws_name and ws_name not in worksheet_names:
                 worksheet_names.append(ws_name)
-        worksheet_names = list(dict.fromkeys(worksheet_names))
+            if ws_name:
+                zone_info = {
+                    "worksheet_name": ws_name,
+                    "x": int(zone.get("x", 0)),
+                    "y": int(zone.get("y", 0)),
+                    "width": int(zone.get("w", 300)),
+                    "height": int(zone.get("h", 300))
+                }
+                worksheet_zones.append(zone_info)
         dashboards.append({
             "dashboard_name": dashboard_name,
-            "worksheet_names": worksheet_names
+            "worksheet_names": worksheet_names,
+            "worksheet_zones": worksheet_zones 
         })
     return dashboards
